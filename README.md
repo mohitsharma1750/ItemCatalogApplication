@@ -47,4 +47,10 @@ $ python application.py
 * A user can Log in and add a movie item.
 * A user can edit/delete movies added by him
 
+### JSON Endpoints
+
+1. API Return the catalog /catalog/JSON
+2. API Returns all the users /users/JSON API 
+3. API Returning the particular genre , Take categoryID as param /catalog/<int:categories_id>/JSON
+4. API Returning the particular movie /catalog/<int:categories_id>/<int:items_id>/JSON')
 
