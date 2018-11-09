@@ -11,6 +11,7 @@ print('Movies DB Setup Started')
 
 Base = declarative_base()
 
+
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
@@ -57,8 +58,9 @@ class Movies(Base):
             'name': self.name,
             'description': self.description,
             'id': self.id,
-            'userId': self.user_id 
+            'userId': self.user_id
         }
+
 
 engine = create_engine('sqlite:///movies_catalogs.db')
 
