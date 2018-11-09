@@ -259,6 +259,12 @@ def showCatalog():
 def newItem():
     session = DBSession()
     if request.method == 'POST':
+        # Check for form Data is Empty or not
+        if request.form['name'] == "" or \
+                request.form['description'] == "":
+            flash("Details Not Added")
+            return render_template('newitem.html')
+
         # get data from the form
         newItem = Movies(name=request.form['name'],
                          description=request.form['description'],

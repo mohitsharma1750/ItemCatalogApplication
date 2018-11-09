@@ -48,9 +48,10 @@ class Movies(Base):
     id = Column(Integer, primary_key=True)
     description = Column(String(250))
     categories_id = Column(Integer, ForeignKey('table_genre.id'))
-    Genre = relationship(Genre, single_parent=True)
+    Genre = relationship(Genre, cascade="all, delete-orphan",
+                         single_parent=True)
     user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    user = relationship(User, cascade="all, delete-orphan", single_parent=True)
 
     @property
     def serialize(self):

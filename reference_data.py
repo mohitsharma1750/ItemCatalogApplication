@@ -163,7 +163,7 @@ categoryItem1 = Movies(user_id=1, name="The Martian",
                        Mars after his team assume him dead, and must \
                        rely on his ingenuity to find a way to signal \
                        to Earth that he is alive.",
-                       enre=category9)
+                       Genre=category9)
 session.add(categoryItem1)
 session.commit()
 
