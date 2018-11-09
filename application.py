@@ -1,18 +1,18 @@
 #!/usr/bin/python
 
-#Flask Dependency Import
+# Flask Dependency Import
 from flask import Flask, render_template, request, redirect
 from flask import jsonify, url_for, flash, g
 from flask import session as login_session
 
-#SQL Alchemy Import
+# SQL Alchemy Import
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 
-#Database Setup Import
+# Database Setup Import
 from db_setup import Base, Genre, Movies, User
 
-#Utility Imports
+# Utility Imports
 from functools import wraps
 import random
 import string
@@ -21,11 +21,9 @@ import json
 from flask import make_response
 import requests
 
-#Outh2 Dependencies Import
+# Outh2 Dependencies Import
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
-
-
 
 app = Flask(__name__)
 CLIENT_ID = json.loads(
@@ -49,10 +47,12 @@ def showLogin():
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
-# Google Connect Method.   
+
+# Google Connect Method.
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
+    session = DBSession()
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
@@ -87,19 +87,20 @@ def gconnect():
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
         response = make_response(
-            json.dumps("Token's user ID doesn't match given user ID."), 401)
+            json.dumps("User Id doesnt Match."), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
     # Verify that the access token is valid for this app.
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
-            json.dumps("Token's client ID does not match app's."), 401)
+            json.dumps("Client App Doesnot Match"), 401)
         print "Token's client ID does not match app's."
         response.headers['Content-Type'] = 'application/json'
         return response
 
-# Token Already Present , User Already Logged in. 
+
+# Token Already Present , User Already Logged in.
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
@@ -125,7 +126,6 @@ def gconnect():
 
     # Check If userId is present, If not create a new User in DB.
     user_id = getUserID(data["email"])
-    print('User Id is',user_id)
     if not user_id:
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
@@ -163,14 +163,14 @@ def getUserID(email):
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id
-    except:
+    except Exception:
         return None
 
 
 # DISCONNECT - Revoke a current user's token and reset their login_session.
 @app.route('/gdisconnect')
 def gdisconnect():
-        # Only disconnect a connected user.
+    # Check if the user is logged in
     access_token = login_session.get('access_token')
     print("Access Token is " + access_token)
     if access_token is None:
@@ -182,7 +182,7 @@ def gdisconnect():
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print("Result is " + result['status'])
-        # Reset the user's sesson.
+    # Reset the user's sesson.
     del login_session['access_token']
     del login_session['gplus_id']
     del login_session['username']
@@ -194,23 +194,24 @@ def gdisconnect():
     return response
 
 
-# JSON API
+# Api returns all the Catalog Items
 @app.route('/catalog/JSON')
 def catalogJSON():
     categorieslist = session.query(Genre).all()
     return jsonify(CategoriesList=[r.serialize for r in categorieslist])
 
-# JSON API
+
+# API Returns all the users
 @app.route('/users/JSON')
 def usersJSON():
-    session =  DBSession()
+    session = DBSession()
     categorieslist = session.query(User).all()
-    return jsonify(CategoriesList=[r.serialize for r in categorieslist])    
+    return jsonify(CategoriesList=[r.serialize for r in categorieslist])
 
 
 @app.route('/catalog/<int:categories_id>/JSON')
 def categoryJSON(categories_id):
-    session =  DBSession()
+    session = DBSession()
     categories = session.query(Genre).filter_by(id=categories_id).one()
     items = session.query(Movies).filter_by(categories_id=categories.id)
     return jsonify(CategoryItem=[i.serialize for i in items])
@@ -218,7 +219,7 @@ def categoryJSON(categories_id):
 
 @app.route('/catalog/<int:categories_id>/<int:items_id>/JSON')
 def itemJSON(categories_id, items_id):
-    session =  DBSession()
+    session = DBSession()
     categories = session.query(Genre).filter_by(id=categories_id).one()
     items = session.query(Movies).filter_by(id=items_id).one()
     return jsonify(ItemDetails=[items.serialize])
@@ -236,11 +237,11 @@ def login_required(f):
     return decorated_function
 
 
-# Main page
+# All Movies and Categories page
 @app.route('/')
 @app.route('/catalog')
 def showCatalog():
-    session = DBSession();
+    session = DBSession()
     categories = session.query(Genre).all()
     items = session.query(Movies).order_by(
         Movies.id.desc()).limit(10)
@@ -257,12 +258,12 @@ def showCatalog():
 @login_required
 def newItem():
     session = DBSession()
-    if request.method == 'POST':  # get data from the form
-        print('Login Session Id is',login_session['user_id'])
+    if request.method == 'POST':
+        # get data from the form
         newItem = Movies(name=request.form['name'],
-                               description=request.form['description'],
-                               categories_id=request.form['categories_id'],
-                               user_id=login_session['user_id'])
+                         description=request.form['description'],
+                         categories_id=request.form['categories_id'],
+                         user_id=login_session['user_id'])
         session.add(newItem)
         session.commit()
         flash("New Movie Is Added")
@@ -274,7 +275,7 @@ def newItem():
 # Show items inside the category
 @app.route('/catalog/<int:categories_id>')
 def showCategories(categories_id):
-    session= DBSession()
+    session = DBSession()
     allcategories = session.query(Genre).all()
     categories = session.query(Genre).filter_by(id=categories_id).one()
     items = session.query(Movies).filter_by(categories_id=categories.id)
@@ -285,7 +286,7 @@ def showCategories(categories_id):
 # Show the specific item and the description of it
 @app.route('/catalog/<int:categories_id>/<int:items_id>')
 def showItem(categories_id, items_id):
-    session= DBSession()
+    session = DBSession()
     categories = session.query(Genre).filter_by(id=categories_id).one()
     items = session.query(Movies).filter_by(id=items_id).one()
     print(login_session)
@@ -305,7 +306,7 @@ def showItem(categories_id, items_id):
            methods=['GET', 'POST'])
 @login_required
 def editItem(categories_id, items_id):
-    session=DBSession()
+    session = DBSession()
     editedItem = session.query(Movies).filter_by(id=items_id).one()
     # make sure user is the creator
     if editedItem.user_id != login_session['user_id']:
@@ -345,7 +346,7 @@ def editItem(categories_id, items_id):
            methods=['GET', 'POST'])
 @login_required
 def deleteItem(categories_id, items_id):
-    session=DBSession()
+    session = DBSession()
     itemToDelete = session.query(Movies).filter_by(id=items_id).one()
     # make sure user is the creator
     if itemToDelete.user_id != login_session['user_id']:
@@ -373,8 +374,8 @@ def disconnect():
         flash("You were not logged in")
         return redirect(url_for('showCatalog'))
 
+
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)
-
