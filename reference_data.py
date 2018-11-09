@@ -2,7 +2,7 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Genre, Movies, User
+from db_setup import Base, Genre, Movies, User
 
 # Create database and create a shortcut for easier to update database
 engine = create_engine('sqlite:///movies_catalogs.db')
